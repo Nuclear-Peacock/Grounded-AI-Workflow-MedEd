@@ -32,8 +32,8 @@ updates:
         patterns: ["*"]
         update-types: ["minor", "patch"]
 
-  # 4. Ruby (Just in case you have more demo/legacy code)
-  - package-ecosystem: "ruby"
+  # 4. Bundler (Just in case you have more demo/legacy code)
+  - package-ecosystem: "bundler" # This replaces "ruby"
     directory: "/"
     schedule:
       interval: "weekly"
