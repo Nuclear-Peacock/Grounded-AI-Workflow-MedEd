@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI Literacy in Radiology — Lt Col Justin Peacock, MD PhD</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg:          #0a0c12;
+    --surface:     #12161f;
+    --surface2:    #1a1f2e;
+    --border:      rgba(255,255,255,0.10);
+    --gold:        #d4a843;
+    --gold-dim:    rgba(212,168,67,0.12);
+    --gold-border: rgba(212,168,67,0.35);
+    --white:       #ffffff;
+    --text:        #e8ecf4;
+    --text-sub:    #b8bfce;
+    --radius:      12px;
+    --radius-lg:   18px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    font-weight: 400;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* PROGRESS */
+  #progress {
+    position: fixed; top: 0; left: 0;
+    height: 3px; width: 0%;
+    background: linear-gradient(90deg, var(--gold), #f0c96a);
+    z-index: 9999;
+    transition: width 0.08s linear;
+    box-shadow: 0 0 12px rgba(212,168,67,0.6);
+  }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0;
+    z-index: 500; height: 60px;
+    display: flex; align-items: center; justify-content: flex-end;
+    padding: 0 2.5rem;
+    background: rgba(10,12,18,0.92);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-links { display: flex; gap: 0.25rem; align-items: center; }
+
+  .nav-pill {
+    font-size: 0.75rem; font-weight: 500;
+    color: var(--text-sub); text-decoration: none;
+    padding: 0.3rem 0.85rem; border-radius: 99px;
+    border: 1px solid transparent; transition: all 0.2s;
+  }
+
+  .nav-pill:hover {
+    color: var(--gold); border-color: var(--gold-border); background: var(--gold-dim);
+  }
+
+  /* NAV DROPDOWN */
+  .nav-dropdown { position: relative; }
+
+  .nav-dropdown-trigger {
+    display: flex; align-items: center; gap: 0.35rem;
+    font-size: 0.75rem; font-weight: 500; color: var(--text-sub);
+    padding: 0.3rem 0.85rem; border-radius: 99px;
+    border: 1px solid transparent; background: transparent;
+    cursor: pointer; transition: all 0.2s;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  .nav-dropdown-trigger:hover,
+  .nav-dropdown.open .nav-dropdown-trigger {
+    color: var(--gold); border-color: var(--gold-border); background: var(--gold-dim);
+  }
+
+  .nav-dropdown-trigger .chevron { transition: transform 0.25s; flex-shrink: 0; }
+  .nav-dropdown.open .nav-dropdown-trigger .chevron { transform: rotate(180deg); }
+
+  .nav-dropdown-menu {
+    position: absolute; top: calc(100% + 0.6rem); right: 0;
+    width: 280px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    box-shadow: 0 20px 48px rgba(0,0,0,0.7);
+    overflow: hidden; opacity: 0; pointer-events: none;
+    transform: translateY(-6px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+
+  .nav-dropdown.open .nav-dropdown-menu {
+    opacity: 1; pointer-events: all; transform: translateY(0);
+  }
+
+  .dd-group { padding: 0.6rem 0; border-bottom: 1px solid var(--border); }
+  .dd-group:last-child { border-bottom: none; }
+
+  .dd-group-label {
+    font-size: 0.6rem; font-weight: 700;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--gold); padding: 0.3rem 1rem 0.5rem;
+  }
+
+  .dd-item {
+    display: flex; align-items: center; gap: 0.65rem;
+    padding: 0.55rem 1rem; text-decoration: none; transition: background 0.15s;
+  }
+
+  .dd-item:hover { background: rgba(255,255,255,0.04); }
+
+  .dd-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .dd-name { font-size: 0.8rem; font-weight: 600; color: var(--white); }
+  .dd-hint { font-size: 0.66rem; color: var(--text-sub); margin-top: 0.05rem; }
+  .dd-arrow { margin-left: auto; font-size: 0.65rem; color: var(--text-sub); flex-shrink: 0; transition: all 0.15s; }
+  .dd-item:hover .dd-arrow { transform: translate(1px,-1px); }
+
+  /* HERO */
+  #hero {
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 80px 2rem 60px; text-align: center;
+    background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(212,168,67,0.10) 0%, transparent 65%), var(--bg);
+    position: relative;
+  }
+
+  .hero-badge {
+    display: inline-flex; align-items: center;
+    background: var(--gold-dim); border: 1px solid var(--gold-border);
+    border-radius: 99px; padding: 0.4rem 1.1rem;
+    font-size: 0.72rem; font-weight: 600;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold);
+    margin-bottom: 2rem;
+    opacity: 0; animation: fadeUp 0.6s 0.1s ease forwards;
+  }
+
+  .hero-h1 {
+    font-size: clamp(2.6rem, 5.5vw, 5rem);
+    font-weight: 700; line-height: 1.08; letter-spacing: -0.02em;
+    color: var(--white); margin-bottom: 0.75rem;
+    opacity: 0; animation: fadeUp 0.6s 0.25s ease forwards;
+  }
+
+  .hero-h1 span { color: var(--gold); }
+
+  .hero-sub {
+    font-size: clamp(1rem, 2vw, 1.2rem);
+    font-weight: 400; color: var(--text-sub); margin-bottom: 2.5rem;
+    opacity: 0; animation: fadeUp 0.6s 0.4s ease forwards;
+  }
+
+  .hero-rule {
+    width: 56px; height: 2px; background: var(--gold);
+    margin: 0 auto 2rem; border-radius: 2px;
+    opacity: 0; animation: fadeIn 0.6s 0.55s ease forwards;
+  }
+
+  .hero-meta {
+    font-size: 0.95rem; color: var(--text-sub);
+    font-weight: 400; line-height: 1.9;
+    opacity: 0; animation: fadeUp 0.6s 0.65s ease forwards;
+  }
+
+  .hero-meta strong {
+    display: block; font-size: 1.1rem; font-weight: 600; color: var(--white);
+  }
+
+  .hero-scroll {
+    position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 0.4rem;
+    opacity: 0; animation: fadeIn 0.8s 1.2s ease forwards;
+  }
+
+  .hero-scroll span {
+    font-size: 0.62rem; font-weight: 500;
+    letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-sub);
+  }
+
+  .hero-scroll-line {
+    width: 1px; height: 36px;
+    background: linear-gradient(to bottom, var(--gold), transparent);
+    animation: scrollLine 2s ease-in-out infinite;
+  }
+
+  /* SLIDES */
+  #slides {
+    padding: 90px 2rem 30px;
+    display: flex; flex-direction: column; align-items: center;
+    background: var(--bg);
+  }
+
+  .section-tag {
+    font-size: 0.7rem; font-weight: 600;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--gold); margin-bottom: 0.5rem; text-align: center;
+  }
+
+  .section-h2 {
+    font-size: clamp(1.4rem, 2.8vw, 2rem);
+    font-weight: 700; color: var(--white);
+    margin-bottom: 2rem; text-align: center; letter-spacing: -0.01em;
+  }
+
+  .slide-wrap {
+    width: 100%; max-width: 960px; aspect-ratio: 16/9;
+    border-radius: var(--radius-lg); overflow: hidden;
+    border: 1px solid var(--border);
+    box-shadow: 0 0 0 1px rgba(212,168,67,0.08), 0 32px 80px rgba(0,0,0,0.8);
+    background: var(--surface);
+  }
+
+  .slide-wrap iframe { width: 100%; height: 100%; border: none; display: block; }
+
+  /* CARDS SECTION */
+  #cards {
+    padding: 70px 2rem 60px;
+    display: flex; flex-direction: column; align-items: center; gap: 1.5rem;
+    background: var(--bg);
+  }
+
+  .cards-tag {
+    font-size: 0.7rem; font-weight: 600;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--text-sub); text-align: center;
+  }
+
+  .cards-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 1.25rem; width: 100%; max-width: 960px;
+  }
+
+  @media (max-width: 700px) { .cards-grid { grid-template-columns: 1fr; } }
+
+  /* CARD */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); overflow: hidden;
+    transition: border-color 0.25s, box-shadow 0.25s;
+  }
+
+  .card:hover { border-color: rgba(212,168,67,0.25); }
+
+  .card-trigger {
+    width: 100%; display: flex; align-items: center; gap: 1rem;
+    padding: 1.6rem 1.75rem; background: transparent; border: none;
+    cursor: pointer; text-align: left; transition: background 0.2s;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  .card-trigger:hover { background: rgba(255,255,255,0.02); }
+
+  .card-icon {
+    width: 48px; height: 48px; border-radius: 12px;
+    background: var(--surface2); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem; flex-shrink: 0; transition: all 0.2s;
+  }
+
+  .card[data-open="true"] .card-icon { border-color: var(--gold-border); background: var(--gold-dim); }
+
+  .card-title { font-size: 1.05rem; font-weight: 600; color: var(--white); letter-spacing: -0.01em; }
+  .card-desc { font-size: 0.82rem; font-weight: 400; color: var(--text-sub); margin-top: 0.2rem; }
+
+  .card-chevron {
+    margin-left: auto; flex-shrink: 0; padding-left: 0.75rem;
+    color: var(--text-sub); transition: transform 0.3s ease, color 0.2s;
+  }
+
+  .card[data-open="true"] .card-chevron { transform: rotate(180deg); color: var(--gold); }
+
+  .card-body {
+    display: grid; grid-template-rows: 0fr;
+    transition: grid-template-rows 0.35s ease;
+    border-top: 0px solid var(--border);
+  }
+
+  .card[data-open="true"] .card-body { grid-template-rows: 1fr; border-top-width: 1px; }
+
+  .card-body-inner { overflow: hidden; padding: 0 1.75rem; transition: padding 0.35s ease; }
+  .card[data-open="true"] .card-body-inner { padding: 1.75rem 1.75rem; }
+
+  /* INNER CONTENT */
+  .group-label {
+    font-size: 0.66rem; font-weight: 700;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--gold); margin-bottom: 0.75rem;
+  }
+
+  .group-divider { height: 1px; background: var(--border); margin: 0 0 1.5rem; }
+
+  .tool-links { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-bottom: 1.5rem; }
+
+  .tool-link {
+    display: flex; align-items: center; gap: 0.65rem;
+    padding: 0.75rem 0.9rem;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; text-decoration: none;
+    transition: all 0.2s; position: relative;
+  }
+
+  .tool-link:hover {
+    border-color: var(--lc); background: rgba(255,255,255,0.03);
+    transform: translateY(-1px); box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+  }
+
+  .tool-arrow {
+    position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%);
+    font-size: 0.68rem; color: var(--text-sub); transition: all 0.2s;
+  }
+
+  .tool-link:hover .tool-arrow { color: var(--lc); transform: translateY(-50%) translate(2px,-2px); }
+
+  .tool-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--lc); box-shadow: 0 0 6px var(--lc); flex-shrink: 0; }
+  .tool-name { font-size: 0.82rem; font-weight: 600; color: var(--white); }
+  .tool-hint { font-size: 0.68rem; color: var(--text-sub); margin-top: 0.1rem; }
+
+  .llm-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 0.6rem; margin-bottom: 1.5rem; }
+
+  .llm-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 0.35rem;
+    padding: 0.75rem 0.4rem;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; text-decoration: none; transition: all 0.2s; text-align: center;
+  }
+
+  .llm-btn:hover {
+    border-color: var(--lc); background: rgba(255,255,255,0.03);
+    transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+  }
+
+  .llm-emoji { font-size: 1.15rem; }
+  .llm-name { font-size: 0.7rem; font-weight: 600; color: var(--text-sub); transition: color 0.2s; }
+  .llm-btn:hover .llm-name { color: var(--lc); }
+
+  /* PROMPT BOX */
+  .prompt-box {
+    position: relative; background: var(--surface2);
+    border: 1px solid var(--border); border-left: 3px solid var(--gold);
+    border-radius: 10px; padding: 1rem 1.1rem 2.75rem; margin-bottom: 1.5rem;
+  }
+
+  .prompt-text {
+    font-size: 0.78rem; font-weight: 400; color: var(--text);
+    line-height: 1.75; white-space: pre-wrap;
+  }
+
+  .copy-btn {
+    position: absolute; bottom: 0.75rem; right: 0.75rem;
+    display: flex; align-items: center; gap: 0.4rem;
+    padding: 0.35rem 0.8rem; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 6px; cursor: pointer;
+    font-size: 0.7rem; font-weight: 600; color: var(--text-sub);
+    font-family: 'Inter', system-ui, sans-serif; transition: all 0.2s;
+  }
+
+  .copy-btn:hover { border-color: var(--gold); color: var(--gold); }
+  .copy-btn.copied { border-color: #4ade80; color: #4ade80; }
+
+  /* NOTEBOOKLM LINK */
+  .nb-link {
+    display: flex; align-items: center; gap: 0.85rem;
+    padding: 1rem 1.1rem; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 10px;
+    text-decoration: none; transition: all 0.2s; position: relative; margin-bottom: 1.25rem;
+  }
+
+  .nb-link:hover { border-color: var(--gold-border); transform: translateY(-1px); box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+
+  .nb-arrow {
+    position: absolute; right: 1rem; top: 50%; transform: translateY(-50%);
+    font-size: 0.75rem; color: var(--text-sub); transition: all 0.2s;
+  }
+
+  .nb-link:hover .nb-arrow { color: var(--gold); transform: translateY(-50%) translate(2px,-2px); }
+
+  .nb-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--gold), #9a6e1a);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem; flex-shrink: 0;
+  }
+
+  .nb-title { font-size: 0.9rem; font-weight: 600; color: var(--white); }
+  .nb-hint { font-size: 0.72rem; color: var(--text-sub); margin-top: 0.1rem; }
+
+  /* ARTIFACT TAGS */
+  .artifact-tags { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-bottom: 1.5rem; }
+
+  .artifact-tag {
+    display: flex; align-items: center; gap: 0.3rem;
+    padding: 0.3rem 0.7rem; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 99px;
+    font-size: 0.72rem; font-weight: 500; color: var(--text-sub);
+  }
+
+  /* FOOTER */
+  footer { background: var(--surface); border-top: 1px solid var(--border); padding: 4rem 2rem 3rem; }
+
+  .footer-inner {
+    max-width: 960px; margin: 0 auto;
+    display: flex; flex-direction: column; align-items: center; gap: 2.5rem;
+  }
+
+  .footer-title {
+    font-size: 0.68rem; font-weight: 700;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--gold); text-align: center;
+  }
+
+  .footer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; width: 100%; }
+
+  @media (max-width: 640px) { .footer-grid { grid-template-columns: 1fr; } }
+
+  .footer-card { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem 1.5rem; }
+
+  .footer-card-label {
+    font-size: 0.7rem; font-weight: 700;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--gold); margin-bottom: 0.6rem;
+  }
+
+  .footer-card p { font-size: 0.78rem; color: var(--text-sub); line-height: 1.7; }
+
+  .footer-byline {
+    font-size: 0.95rem; font-weight: 500; color: var(--text-sub);
+    text-align: center; padding-top: 1rem;
+    border-top: 1px solid var(--border); width: 100%;
+  }
+
+  .footer-byline a { color: var(--gold); text-decoration: none; }
+  .footer-byline a:hover { text-decoration: underline; }
+
+  /* REVEAL */
+  .reveal { opacity:0; transform:translateY(16px); transition: opacity 0.55s ease, transform 0.55s ease; }
+  .reveal.on { opacity:1; transform:none; }
+  .d1 { transition-delay: 0.05s; }
+  .d2 { transition-delay: 0.18s; }
+
+  /* KEYFRAMES */
+  @keyframes fadeUp { from { opacity:0; transform:translateY(18px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+  @keyframes scrollLine { 0%,100% { transform:scaleY(1); opacity:1; } 50% { transform:scaleY(0.4); opacity:0.4; } }
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-links">
+    <a href="#slides" class="nav-pill">Slides</a>
+    <a href="#cards" class="nav-pill">Workshop</a>
+    <div class="nav-dropdown" id="toolsDD">
+      <button class="nav-dropdown-trigger" onclick="toggleDD()">
+        Tools
+        <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="nav-dropdown-menu">
+        <div class="dd-group">
+          <div class="dd-group-label">Evidence-Based Research</div>
+          <a href="https://www.openevidence.com" target="_blank" class="dd-item">
+            <div class="dd-dot" style="background:#5b9cf6;box-shadow:0 0 5px #5b9cf6;"></div>
+            <div><div class="dd-name">OpenEvidence</div><div class="dd-hint">Clinical-grade AI answers</div></div>
+            <span class="dd-arrow">↗</span>
+          </a>
+          <a href="https://www.perplexity.ai" target="_blank" class="dd-item">
+            <div class="dd-dot" style="background:#a78bfa;box-shadow:0 0 5px #a78bfa;"></div>
+            <div><div class="dd-name">Perplexity</div><div class="dd-hint">AI search + citations</div></div>
+            <span class="dd-arrow">↗</span>
+          </a>
+          <a href="https://consensus.app" target="_blank" class="dd-item">
+            <div class="dd-dot" style="background:#4ade80;box-shadow:0 0 5px #4ade80;"></div>
+            <div><div class="dd-name">Consensus</div><div class="dd-hint">Research synthesis</div></div>
+            <span class="dd-arrow">↗</span>
+          </a>
+          <a href="https://pubmed.ncbi.nlm.nih.gov" target="_blank" class="dd-item">
+            <div class="dd-dot" style="background:#fb923c;box-shadow:0 0 5px #fb923c;"></div>
+            <div><div class="dd-name">PubMed</div><div class="dd-hint">NLM gold standard</div></div>
+            <span class="dd-arrow">↗</span>
+          </a>
+        </div>
+        <div class="dd-group">
+          <div class="dd-group-label">AI Language Models</div>
+          <a href="https://gemini.google.com" target="_blank" class="dd-item">
+            <div class="dd-dot" style="background:#5b9cf6;box-shadow:0 0 5px #5b9cf6;"></div>
+            <div><div class="dd-name">Gemini</div><div class="dd-hint">Google — integrates with NotebookLM</div></div>
+            <span class="dd-arrow">↗</span>
+          </a>
+          <a href="https://chatgpt.com" target="_blank" class="dd-item">
+            <div class="dd-dot" style="background:#4ade80;box-shadow:0 0 5px #4ade80;"></div>
+            <div><div class="dd-name">ChatGPT</div><div class="dd-hint">OpenAI — versatile, widely used</div></div>
+            <span class="dd-arrow">↗</span>
+          </a>
+          <a href="https://copilot.microsoft.com" target="_blank" class="dd-item">
+            <div class="dd-dot" style="background:#60a5fa;box-shadow:0 0 5px #60a5fa;"></div>
+            <div><div class="dd-name">Copilot</div><div class="dd-hint">Microsoft — native to Office 365</div></div>
+            <span class="dd-arrow">↗</span>
+          </a>
+          <a href="https://claude.ai" target="_blank" class="dd-item">
+            <div class="dd-dot" style="background:#fb923c;box-shadow:0 0 5px #fb923c;"></div>
+            <div><div class="dd-name">Claude</div><div class="dd-hint">Anthropic — strong reasoning</div></div>
+            <span class="dd-arrow">↗</span>
+          </a>
+        </div>
+        <div class="dd-group">
+          <div class="dd-group-label">Grounded Artifact Creation</div>
+          <a href="https://notebooklm.google.com" target="_blank" class="dd-item">
+            <div class="dd-dot" style="background:#d4a843;box-shadow:0 0 5px #d4a843;"></div>
+            <div><div class="dd-name">NotebookLM</div><div class="dd-hint">Upload sources → generate artifacts</div></div>
+            <span class="dd-arrow">↗</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-badge">AAR 2026 · Workshop Session</div>
+  <h1 class="hero-h1">AI Literacy in<br><span>Radiology</span> Education</h1>
+  <p class="hero-sub">Designing Education for All Levels</p>
+  <div class="hero-rule"></div>
+  <div class="hero-meta">
+    <strong>Lt Col Justin Peacock, MD, PhD</strong>
+    Associate Dean for Research &nbsp;·&nbsp; Assistant Professor of Radiology and Bioengineering<br>
+    Uniformed Services University School of Medicine
+  </div>
+  <div class="hero-scroll">
+    <span>Scroll</span>
+    <div class="hero-scroll-line"></div>
+  </div>
+</section>
+
+<!-- SLIDES -->
+<section id="slides">
+  <p class="section-tag reveal">Presentation</p>
+  <h2 class="section-h2 reveal">Session Slide Deck</h2>
+  <div class="slide-wrap reveal">
+    <iframe
+      src="https://docs.google.com/presentation/d/1O_25Mff7wbYOX06t4EhfZsVHr6C_gSsmlgh0zf-Rd9Y/embed?start=false&loop=false&delayms=3000"
+      allowfullscreen mozallowfullscreen webkitallowfullscreen>
+    </iframe>
+  </div>
+</section>
+
+<!-- WORKSHOP CARDS -->
+<section id="cards">
+  <p class="cards-tag reveal">Interactive Workshop</p>
+  <div class="cards-grid">
+
+    <!-- CARD 1: FIND VERIFIED SOURCES -->
+    <div class="card reveal d1" data-open="false" id="card1">
+      <button class="card-trigger" onclick="toggleCard('card1')" aria-expanded="false">
+        <div class="card-icon">🔬</div>
+        <div>
+          <div class="card-title">Find Verified Sources</div>
+          <div class="card-desc">Download verified sources from classical or AI-based platforms.</div>
+        </div>
+        <svg class="card-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="card-body">
+        <div class="card-body-inner">
+
+          <div class="group-label">Metaprompt With</div>
+          <div class="llm-row">
+            <a href="https://gemini.google.com" target="_blank" class="llm-btn" style="--lc:#5b9cf6;"><span class="llm-emoji">🔵</span><span class="llm-name">Gemini</span></a>
+            <a href="https://chatgpt.com" target="_blank" class="llm-btn" style="--lc:#4ade80;"><span class="llm-emoji">🟢</span><span class="llm-name">ChatGPT</span></a>
+            <a href="https://copilot.microsoft.com" target="_blank" class="llm-btn" style="--lc:#60a5fa;"><span class="llm-emoji">🪟</span><span class="llm-name">Copilot</span></a>
+            <a href="https://claude.ai" target="_blank" class="llm-btn" style="--lc:#fb923c;"><span class="llm-emoji">🟠</span><span class="llm-name">Claude</span></a>
+          </div>
+
+          <div class="group-divider"></div>
+
+          <div class="group-label">Consider the Following Prompt</div>
+          <div class="prompt-box">
+            <div class="prompt-text" id="p1">You are an expert medical educator and AI researcher specializing in radiology education. Design a precise metaprompt I can use with an AI-based literature search tool (such as OpenEvidence, Consensus, or Perplexity) to systematically retrieve high-quality, peer-reviewed research studies on:
+
+1. Development of Radiology AI curricula for residents and radiologists
+2. AI competency and literacy frameworks for radiologists
+3. Integration of AI tools into radiology training programs
+4. Assessment of AI readiness among radiology trainees and faculty
+
+The metaprompt should specify: search scope, preferred study types (systematic reviews, RCTs, cohort studies), date range (2018–present), and output format (structured summary with citation, study type, key findings, and relevance to curriculum design).</div>
+            <button class="copy-btn" onclick="copyPrompt('p1', this)">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+              Copy
+            </button>
+          </div>
+
+          <div class="group-divider"></div>
+
+          <div class="group-label">Evidence-Based Research Platforms</div>
+          <div class="tool-links">
+            <a href="https://www.openevidence.com" target="_blank" class="tool-link" style="--lc:#5b9cf6;">
+              <div class="tool-dot" style="--lc:#5b9cf6;"></div>
+              <div><div class="tool-name">OpenEvidence</div><div class="tool-hint">Clinical-grade AI answers</div></div>
+              <span class="tool-arrow">↗</span>
+            </a>
+            <a href="https://www.perplexity.ai" target="_blank" class="tool-link" style="--lc:#a78bfa;">
+              <div class="tool-dot" style="--lc:#a78bfa;"></div>
+              <div><div class="tool-name">Perplexity</div><div class="tool-hint">AI search + citations</div></div>
+              <span class="tool-arrow">↗</span>
+            </a>
+            <a href="https://consensus.app" target="_blank" class="tool-link" style="--lc:#4ade80;">
+              <div class="tool-dot" style="--lc:#4ade80;"></div>
+              <div><div class="tool-name">Consensus</div><div class="tool-hint">Research synthesis</div></div>
+              <span class="tool-arrow">↗</span>
+            </a>
+            <a href="https://pubmed.ncbi.nlm.nih.gov" target="_blank" class="tool-link" style="--lc:#fb923c;">
+              <div class="tool-dot" style="--lc:#fb923c;"></div>
+              <div><div class="tool-name">PubMed</div><div class="tool-hint">NLM gold standard</div></div>
+              <span class="tool-arrow">↗</span>
+            </a>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- CARD 2: BUILD WITH NOTEBOOKLM -->
+    <div class="card reveal d2" data-open="false" id="card2">
+      <button class="card-trigger" onclick="toggleCard('card2')" aria-expanded="false">
+        <div class="card-icon">📓</div>
+        <div>
+          <div class="card-title">Build with NotebookLM</div>
+          <div class="card-desc">Upload verified sources and generate grounded educational artifacts — traceable to your literature.</div>
+        </div>
+        <svg class="card-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="card-body">
+        <div class="card-body-inner">
+
+          <div class="group-label">Open NotebookLM</div>
+          <a href="https://notebooklm.google.com" target="_blank" class="nb-link">
+            <div class="nb-icon">📓</div>
+            <div>
+              <div class="nb-title">Open NotebookLM</div>
+              <div class="nb-hint">Upload sources → generate grounded educational artifacts</div>
+            </div>
+            <span class="nb-arrow">↗</span>
+          </a>
+
+          <div class="group-label">Available Artifacts in NotebookLM</div>
+          <div class="artifact-tags">
+            <span class="artifact-tag">🎙️ Audio Overview</span>
+            <span class="artifact-tag">📋 Slide Deck</span>
+            <span class="artifact-tag">🎬 Video Overview</span>
+            <span class="artifact-tag">🗺️ Mind Map</span>
+            <span class="artifact-tag">📄 Reports</span>
+            <span class="artifact-tag">❓ Flashcards</span>
+            <span class="artifact-tag">🧪 Quiz</span>
+            <span class="artifact-tag">🖼️ Infographic</span>
+            <span class="artifact-tag">📊 Data Table</span>
+          </div>
+
+          <div class="group-divider"></div>
+
+          <div class="group-label">Prompt 1 — AI Curriculum via Kern's 6-Step Model</div>
+          <div class="prompt-box">
+            <div class="prompt-text" id="p2">You are an expert medical educator and curriculum developer specializing in radiology and AI education. Using ONLY the sources uploaded to this notebook, generate a comprehensive AI literacy curriculum for radiology residents and faculty that strictly follows Kern's 6-Step Model for Curriculum Development.
+
+Structure your output as follows:
+
+STEP 1 — PROBLEM IDENTIFICATION & GENERAL NEEDS ASSESSMENT
+- Define the gap between current and ideal AI literacy in radiology
+- Cite specific evidence from the uploaded sources
+
+STEP 2 — TARGETED NEEDS ASSESSMENT
+- Identify specific learning needs for: (a) junior residents, (b) senior residents, (c) attending faculty
+- Reference competency frameworks found in the sources
+
+STEP 3 — GOALS & OBJECTIVES
+- Program-level goals (3–5)
+- Measurable learning objectives per learner level using Bloom's Taxonomy (levels 3–5)
+- Map objectives to ACGME competency domains
+
+STEP 4 — EDUCATIONAL STRATEGIES
+- Recommended teaching formats (didactic, simulation, case-based, hands-on tool use)
+- Sequencing and timing of content delivery
+- Specific AI tools and topics to address per session
+
+STEP 5 — IMPLEMENTATION
+- Proposed curriculum schedule (number of sessions, duration, format)
+- Faculty roles and responsibilities
+- Required resources and infrastructure
+
+STEP 6 — EVALUATION & FEEDBACK
+- Formative and summative assessment methods
+- Metrics for measuring AI competency attainment
+- Feedback loops for curriculum improvement
+
+Ground every recommendation in the uploaded sources. Flag any gaps not addressed by the current literature.</div>
+            <button class="copy-btn" onclick="copyPrompt('p2', this)">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+              Copy
+            </button>
+          </div>
+
+          <div class="group-divider"></div>
+
+          <div class="group-label">Prompt 2 — AI Ethics in Radiology Slide Deck (50 min / 25 slides)</div>
+          <div class="prompt-box">
+            <div class="prompt-text" id="p3">You are an expert radiology educator and AI ethicist. Using ONLY the sources uploaded to this notebook, create a detailed outline for a 50-minute lecture slide deck (exactly 25 slides) on AI Ethics in Radiology for residents and faculty.
+
+For each slide provide: slide number, title, key content points (3–5 bullets), and any recommended visuals or activities.
+
+SLIDES 1–3: INTRODUCTION & OBJECTIVES
+- Title slide, speaker intro, session overview
+- 3–4 strong measurable learning objectives (Bloom's levels 4–6)
+- Why AI ethics matters in radiology right now — framing the stakes
+
+SLIDES 4–8: ETHICAL FOUNDATIONS
+- Core ethical principles applied to AI in radiology (beneficence, non-maleficence, autonomy, justice)
+- Algorithmic bias and health equity — evidence from the literature
+- Data privacy, consent, and patient rights in AI-assisted imaging
+
+SLIDES 9–14: REAL-WORLD EXAMPLES FROM THE LITERATURE
+- 3 examples of GOOD ethical AI use in radiology (cite specific studies from uploaded sources)
+- 3 examples of BAD or problematic AI use/failures in radiology (cite specific studies from uploaded sources)
+- Discussion activity: small group analysis of a case scenario (5 minutes)
+
+SLIDES 15–19: REGULATORY & PROFESSIONAL FRAMEWORKS
+- FDA oversight of AI/ML-based software in radiology
+- ACR AI appropriateness criteria and ethical guidelines
+- Radiologist accountability when AI is wrong — medicolegal considerations
+
+SLIDES 20–23: PRACTICAL GUIDANCE FOR TRAINEES & FACULTY
+- How to critically evaluate an AI tool before clinical use
+- Documenting AI use in radiology reports
+- Speaking up when AI output seems wrong
+
+SLIDES 24–25: SUMMARY & CLOSING
+- Key takeaways (one per objective)
+- Resources for further learning and Q&A prompt
+
+Ground all content in the uploaded sources. Flag any slide where sources do not provide sufficient evidence so the educator can supplement.</div>
+            <button class="copy-btn" onclick="copyPrompt('p3', this)">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+              Copy
+            </button>
+          </div>
+
+          <div class="group-divider"></div>
+
+          <div class="group-label">Metaprompt Artifacts With</div>
+          <div class="llm-row">
+            <a href="https://gemini.google.com" target="_blank" class="llm-btn" style="--lc:#5b9cf6;"><span class="llm-emoji">🔵</span><span class="llm-name">Gemini</span></a>
+            <a href="https://chatgpt.com" target="_blank" class="llm-btn" style="--lc:#4ade80;"><span class="llm-emoji">🟢</span><span class="llm-name">ChatGPT</span></a>
+            <a href="https://copilot.microsoft.com" target="_blank" class="llm-btn" style="--lc:#60a5fa;"><span class="llm-emoji">🪟</span><span class="llm-name">Copilot</span></a>
+            <a href="https://claude.ai" target="_blank" class="llm-btn" style="--lc:#fb923c;"><span class="llm-emoji">🟠</span><span class="llm-name">Claude</span></a>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+
+    <div class="footer-title">Disclosures &amp; Disclaimers</div>
+
+    <div class="footer-grid">
+      <div class="footer-card">
+        <div class="footer-card-label">Opinions &amp; Assertions</div>
+        <p>The opinions and assertions expressed herein are those of the author and do not necessarily reflect the official policy or position of the Uniformed Services University of the Health Sciences, the Department of the Army, Navy, or the Air Force, or the Department of War.</p>
+      </div>
+      <div class="footer-card">
+        <div class="footer-card-label">AI-Assisted Content</div>
+        <p>The author used Google Gemini 3 (Large Language Model) and NotebookLM to co-create the content for this session. Original ideas, structure, and format were provided by the author, and any generated content was rigorously inspected, refined, and altered by the author. Accessed March 2026.</p>
+      </div>
+      <div class="footer-card">
+        <div class="footer-card-label">Conflicts of Interest</div>
+        <p>The author has no conflicts of interest to report.</p>
+      </div>
+    </div>
+
+    <div class="footer-byline" id="contact"></div>
+
+  </div>
+</footer>
+
+<script>
+  // Render email safely to prevent scraping
+  (function() {
+    var u = 'justin.peacock';
+    var d = 'usuhs.edu';
+    var el = document.getElementById('contact');
+    el.innerHTML =
+      '<a href="mailto:' + u + '@' + d + '">' + u + '@' + d + '</a>' +
+      ' &nbsp;·&nbsp; ' +
+      '<a href="https://www.linkedin.com/in/jpeacock/" target="_blank">LinkedIn</a>';
+  })();
+
+  // Progress bar
+  window.addEventListener('scroll', function() {
+    var pct = window.scrollY / (document.body.scrollHeight - window.innerHeight) * 100;
+    document.getElementById('progress').style.width = pct + '%';
+  });
+
+  // Scroll reveal
+  var obs = new IntersectionObserver(function(entries) {
+    entries.forEach(function(e) { if (e.isIntersecting) e.target.classList.add('on'); });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.reveal').forEach(function(el) { obs.observe(el); });
+
+  // Tools dropdown
+  function toggleDD() {
+    document.getElementById('toolsDD').classList.toggle('open');
+  }
+  document.addEventListener('click', function(e) {
+    var dd = document.getElementById('toolsDD');
+    if (!dd.contains(e.target)) dd.classList.remove('open');
+  });
+
+  // Card toggle
+  function toggleCard(id) {
+    var card = document.getElementById(id);
+    var isOpen = card.dataset.open === 'true';
+    var btn = card.querySelector('.card-trigger');
+    card.dataset.open = isOpen ? 'false' : 'true';
+    btn.setAttribute('aria-expanded', String(!isOpen));
+    if (!isOpen) {
+      setTimeout(function() { card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 50);
+    }
+  }
+
+  // Copy prompt
+  function copyPrompt(id, btn) {
+    var text = document.getElementById(id).innerText;
+    navigator.clipboard.writeText(text).then(function() {
+      btn.classList.add('copied');
+      btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Copied!';
+      setTimeout(function() {
+        btn.classList.remove('copied');
+        btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy';
+      }, 2000);
+    });
+  }
+</script>
+</body>
+</html>
